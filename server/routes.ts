@@ -4,7 +4,25 @@ import { getSupabase } from "./supabase";
 import { getStorage } from "./storage";
 import { Ollama } from "ollama";
 
-const ollama = new Ollama({ host: 'http://localhost:11434' });
+const ollamaHost = process.env.OLLAMA_HOST ?? "http://localhost:11434";
+const ollama = new Ollama({ host: ollamaHost });
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function sendMissingSupabaseEnv(res: Express["response"], action: string) {
+  const hasUrl = !!process.env.SUPABASE_URL;
+  const hasKey = !!process.env.SUPABASE_ANON_KEY;
+  console.error("[Vercel] Supabase env check:", { hasUrl, hasKey });
+
+  return res.status(503).json({
+    message: `Failed to ${action}`,
+    error:
+      "SUPABASE_URL and SUPABASE_ANON_KEY must be set in Vercel Environment Variables (exact names, no spaces). Redeploy after saving.",
+    debug: { hasUrl, hasKey },
+  });
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -15,22 +33,14 @@ export async function registerRoutes(
   // --- Mind map CRUD ---
   app.get("/api/maps", async (_req, res) => {
     try {
-      // Vercel에서 Supabase env 미설정 시 안내 (요청 시점에 env 확인)
       const supabaseClient = getSupabase();
       if (process.env.VERCEL && !supabaseClient) {
-        const hasUrl = !!process.env.SUPABASE_URL;
-        const hasKey = !!process.env.SUPABASE_ANON_KEY;
-        console.error("[Vercel] Supabase env check:", { hasUrl, hasKey });
-        return res.status(503).json({
-          message: "Failed to list mind maps",
-          error: "SUPABASE_URL and SUPABASE_ANON_KEY must be set in Vercel Environment Variables (exact names, no spaces). Redeploy after saving.",
-          debug: process.env.VERCEL ? { hasUrl, hasKey } : undefined,
-        });
+        return sendMissingSupabaseEnv(res, "list mind maps");
       }
       const list = await getStorage().listMindMaps();
       res.json(list);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
+      const message = getErrorMessage(error, "Failed to list mind maps");
       console.error("List maps error:", message, error);
       res.status(500).json({
         message: "Failed to list mind maps",
@@ -41,19 +51,26 @@ export async function registerRoutes(
 
   app.get("/api/maps/:id", async (req, res) => {
     try {
+      if (process.env.VERCEL && !getSupabase()) {
+        return sendMissingSupabaseEnv(res, "load mind map");
+      }
       const map = await getStorage().getMindMap(req.params.id);
       if (!map) {
         return res.status(404).json({ message: "Mind map not found" });
       }
       res.json(map);
     } catch (error) {
-      console.error("Get map error:", error);
-      res.status(500).json({ message: "Failed to load mind map" });
+      const message = getErrorMessage(error, "Failed to load mind map");
+      console.error("Get map error:", message, error);
+      res.status(500).json({ message: "Failed to load mind map", error: message });
     }
   });
 
   app.post("/api/maps", async (req, res) => {
     try {
+      if (process.env.VERCEL && !getSupabase()) {
+        return sendMissingSupabaseEnv(res, "create mind map");
+      }
       const { title, nodes = [], edges = [] } = req.body ?? {};
       const map = await getStorage().createMindMap({ title, nodes, edges });
       if (!map?.id) {
@@ -62,13 +79,17 @@ export async function registerRoutes(
       }
       res.status(201).setHeader("Content-Type", "application/json").json(map);
     } catch (error) {
-      console.error("Create map error:", error);
-      res.status(500).json({ message: "Failed to create mind map" });
+      const message = getErrorMessage(error, "Failed to create mind map");
+      console.error("Create map error:", message, error);
+      res.status(500).json({ message: "Failed to create mind map", error: message });
     }
   });
 
   app.put("/api/maps/:id", async (req, res) => {
     try {
+      if (process.env.VERCEL && !getSupabase()) {
+        return sendMissingSupabaseEnv(res, "save mind map");
+      }
       const { title, nodes, edges } = req.body ?? {};
       if (!nodes || !edges) {
         return res.status(400).json({ message: "nodes and edges are required" });
@@ -79,23 +100,36 @@ export async function registerRoutes(
       }
       res.json(map);
     } catch (error) {
-      console.error("Update map error:", error);
-      res.status(500).json({ message: "Failed to save mind map" });
+      const message = getErrorMessage(error, "Failed to save mind map");
+      console.error("Update map error:", message, error);
+      res.status(500).json({ message: "Failed to save mind map", error: message });
     }
   });
 
   app.delete("/api/maps/:id", async (req, res) => {
     try {
+      if (process.env.VERCEL && !getSupabase()) {
+        return sendMissingSupabaseEnv(res, "delete mind map");
+      }
       await getStorage().deleteMindMap(req.params.id);
       res.status(204).send();
     } catch (error) {
-      console.error("Delete map error:", error);
-      res.status(500).json({ message: "Failed to delete mind map" });
+      const message = getErrorMessage(error, "Failed to delete mind map");
+      console.error("Delete map error:", message, error);
+      res.status(500).json({ message: "Failed to delete mind map", error: message });
     }
   });
 
   app.post("/api/generate-map", async (req, res) => {
     try {
+      if (process.env.VERCEL && ollamaHost.includes("localhost")) {
+        return res.status(503).json({
+          message: "AI generation is unavailable on this Vercel deployment",
+          error:
+            "This route is configured to call a local Ollama server at http://localhost:11434. Vercel Serverless Functions cannot reach that local process. Run locally or set OLLAMA_HOST to a reachable remote Ollama server.",
+        });
+      }
+
       const { prompt } = req.body;
       
       if (!prompt) {
@@ -161,8 +195,9 @@ Generate 5 to 10 nodes capturing the essence of the prompt.
       res.json(mindMapData);
 
     } catch (error) {
-      console.error("Generation error:", error);
-      res.status(500).json({ message: "Failed to generate mind map" });
+      const message = getErrorMessage(error, "Failed to generate mind map");
+      console.error("Generation error:", message, error);
+      res.status(500).json({ message: "Failed to generate mind map", error: message });
     }
   });
 

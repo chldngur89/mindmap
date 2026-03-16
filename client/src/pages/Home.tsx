@@ -90,8 +90,8 @@ function MindMapCanvas() {
           if (!mapId) setLocation(`/map/${data.id}`);
           toast({ title: "저장됨", description: "마인드맵이 저장되었습니다." });
         },
-        onError: () => {
-          toast({ variant: "destructive", title: "저장 실패", description: "다시 시도해 주세요." });
+        onError: (error) => {
+          toast({ variant: "destructive", title: "저장 실패", description: error.message });
         },
       }
     );
@@ -201,8 +201,8 @@ function MindMapCanvas() {
                           setLocation("/");
                           toast({ title: "삭제됨", description: "마인드맵이 삭제되었습니다." });
                         },
-                        onError: () => {
-                          toast({ variant: "destructive", title: "삭제 실패", description: "다시 시도해 주세요." });
+                        onError: (error) => {
+                          toast({ variant: "destructive", title: "삭제 실패", description: error.message });
                         },
                       });
                     }}

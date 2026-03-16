@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Node, Edge } from "@xyflow/react";
+import { getApiErrorMessage } from "@/lib/api";
 
 export interface MindMapData {
   id: string;
@@ -21,10 +22,9 @@ export function useListMaps() {
     queryFn: async (): Promise<MindMapListItem[]> => {
       const res = await fetch("/api/maps");
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        const msg = body?.error || body?.message || "Failed to list mind maps";
-        const debug = body?.debug ? ` (env: ${JSON.stringify(body.debug)})` : "";
-        throw new Error(msg + debug);
+        throw new Error(
+          await getApiErrorMessage(res, "Failed to list mind maps"),
+        );
       }
       return res.json();
     },
@@ -36,7 +36,11 @@ export function useLoadMap(mapId: string | null) {
     queryKey: ["map", mapId],
     queryFn: async (): Promise<MindMapData> => {
       const res = await fetch(`/api/maps/${mapId}`);
-      if (!res.ok) throw new Error("Failed to load mind map");
+      if (!res.ok) {
+        throw new Error(
+          await getApiErrorMessage(res, "Failed to load mind map"),
+        );
+      }
       return res.json();
     },
     enabled: !!mapId,
@@ -64,7 +68,11 @@ export function useSaveMap() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title, nodes, edges }),
         });
-        if (!res.ok) throw new Error("Failed to save mind map");
+        if (!res.ok) {
+          throw new Error(
+            await getApiErrorMessage(res, "Failed to save mind map"),
+          );
+        }
         return res.json();
       } else {
         const res = await fetch("/api/maps", {
@@ -72,7 +80,11 @@ export function useSaveMap() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title, nodes, edges }),
         });
-        if (!res.ok) throw new Error("Failed to create mind map");
+        if (!res.ok) {
+          throw new Error(
+            await getApiErrorMessage(res, "Failed to create mind map"),
+          );
+        }
         return res.json();
       }
     },
@@ -88,7 +100,11 @@ export function useDeleteMap() {
   return useMutation({
     mutationFn: async (mapId: string): Promise<void> => {
       const res = await fetch(`/api/maps/${mapId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete mind map");
+      if (!res.ok) {
+        throw new Error(
+          await getApiErrorMessage(res, "Failed to delete mind map"),
+        );
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["maps"] });

@@ -90,23 +90,35 @@ Vercel 프로젝트에 **환경 변수**를 넣어줘야 배포된 앱이 당신
 
 ### 2) Supabase RLS 해결 (한 번에 적용)
 
-RLS 에러가 나면 **Supabase 대시보드 → SQL Editor**에서 아래 전체를 복사해 **Run** 하세요.
+정책 넣었는데도 RLS 에러가 나면, **기존 정책을 다 지우고** 아래만 적용하세요.
+
+**Supabase 대시보드 → SQL Editor**에서 아래 **전체** 복사 후 **Run**.
 
 ```sql
--- 1) RLS 활성화
+-- 1) mind_maps에 걸린 기존 정책 전부 제거 (이름 상관없이)
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN (SELECT policyname FROM pg_policies WHERE tablename = 'mind_maps' AND schemaname = 'public')
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON mind_maps', r.policyname);
+  END LOOP;
+END $$;
+
+-- 2) RLS 켜기
 ALTER TABLE mind_maps ENABLE ROW LEVEL SECURITY;
 
--- 2) 기존 정책이 있으면 제거 (이름이 다르면 Table Editor → mind_maps → Policies에서 직접 확인)
-DROP POLICY IF EXISTS "Allow anon all on mind_maps" ON mind_maps;
-
--- 3) anon이 목록/조회/저장/수정/삭제 모두 허용
+-- 3) anon 전부 허용 (SELECT/INSERT/UPDATE/DELETE)
 CREATE POLICY "Allow anon all on mind_maps"
 ON mind_maps FOR ALL TO anon
 USING (true)
 WITH CHECK (true);
 ```
 
-실행 후 **저장된 배포 URL**에서 새로고침하면 목록이 나와야 합니다.
+실행 후 배포 URL에서 새로고침.
+
+**그래도 안 되면** RLS가 원인인지 확인: **Table Editor → mind_maps → … 메뉴 → RLS 비활성화** 해보기. 비활성화했을 때 목록 나오면 정책 문제 맞음 → 다시 활성화하고 위 SQL 한 번 더 실행.
 
 ### 3) Vercel 환경 변수 확인
 
