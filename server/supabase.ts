@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 let cached: SupabaseClient | null | undefined = undefined;
+const SUPABASE_TIMEOUT_MS = 8000;
 
 export interface SupabaseEnvStatus {
   hasUrl: boolean;
@@ -53,6 +54,28 @@ export function getSupabase(): SupabaseClient | null {
         auth: {
           autoRefreshToken: false,
           persistSession: false,
+        },
+        global: {
+          fetch: async (input, init) => {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), SUPABASE_TIMEOUT_MS);
+
+            try {
+              return await fetch(input, {
+                ...init,
+                signal: controller.signal,
+              });
+            } catch (error) {
+              if (error instanceof Error && error.name === "AbortError") {
+                throw new Error(
+                  `Supabase request timed out after ${SUPABASE_TIMEOUT_MS / 1000}s. Check SUPABASE_URL and network access from Vercel.`,
+                );
+              }
+              throw error;
+            } finally {
+              clearTimeout(timeout);
+            }
+          },
         },
       })
     : null;

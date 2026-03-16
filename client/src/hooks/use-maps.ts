@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Node, Edge } from "@xyflow/react";
-import { getApiErrorMessage } from "@/lib/api";
+import { fetchWithTimeout, getApiErrorMessage } from "@/lib/api";
 
 export interface MindMapData {
   id: string;
@@ -20,7 +20,7 @@ export function useListMaps() {
   return useQuery({
     queryKey: ["maps"],
     queryFn: async (): Promise<MindMapListItem[]> => {
-      const res = await fetch("/api/maps");
+      const res = await fetchWithTimeout("/api/maps");
       if (!res.ok) {
         throw new Error(
           await getApiErrorMessage(res, "Failed to list mind maps"),
@@ -35,7 +35,7 @@ export function useLoadMap(mapId: string | null) {
   return useQuery({
     queryKey: ["map", mapId],
     queryFn: async (): Promise<MindMapData> => {
-      const res = await fetch(`/api/maps/${mapId}`);
+      const res = await fetchWithTimeout(`/api/maps/${mapId}`);
       if (!res.ok) {
         throw new Error(
           await getApiErrorMessage(res, "Failed to load mind map"),
@@ -63,7 +63,7 @@ export function useSaveMap() {
       edges: Edge[];
     }): Promise<MindMapData> => {
       if (mapId) {
-        const res = await fetch(`/api/maps/${mapId}`, {
+        const res = await fetchWithTimeout(`/api/maps/${mapId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title, nodes, edges }),
@@ -75,7 +75,7 @@ export function useSaveMap() {
         }
         return res.json();
       } else {
-        const res = await fetch("/api/maps", {
+        const res = await fetchWithTimeout("/api/maps", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title, nodes, edges }),
@@ -99,7 +99,9 @@ export function useDeleteMap() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (mapId: string): Promise<void> => {
-      const res = await fetch(`/api/maps/${mapId}`, { method: "DELETE" });
+      const res = await fetchWithTimeout(`/api/maps/${mapId}`, {
+        method: "DELETE",
+      });
       if (!res.ok) {
         throw new Error(
           await getApiErrorMessage(res, "Failed to delete mind map"),

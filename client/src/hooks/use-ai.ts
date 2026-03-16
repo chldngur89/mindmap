@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { type Node, type Edge } from "@xyflow/react";
-import { getApiErrorMessage } from "@/lib/api";
+import { fetchWithTimeout, getApiErrorMessage } from "@/lib/api";
 
 interface GenerateMapResponse {
     nodes: Node[];
@@ -10,7 +10,7 @@ interface GenerateMapResponse {
 export function useGenerateMap() {
   return useMutation<GenerateMapResponse, Error, string>({
     mutationFn: async (prompt: string) => {
-      const response = await fetch("/api/generate-map", {
+      const response = await fetchWithTimeout("/api/generate-map", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
