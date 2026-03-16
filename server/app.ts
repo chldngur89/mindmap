@@ -40,7 +40,7 @@ export async function createApp() {
     const originalResJson = res.json.bind(res);
     res.json = function (bodyJson: unknown, ...args: unknown[]) {
       capturedJsonResponse = bodyJson as Record<string, unknown>;
-      return originalResJson(bodyJson, ...args);
+      return (originalResJson as (body: unknown, ...a: unknown[]) => Response)(bodyJson, ...args);
     };
     res.on("finish", () => {
       const duration = Date.now() - start;
