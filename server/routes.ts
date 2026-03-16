@@ -1,26 +1,46 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { getSupabase } from "./supabase";
-import { getStorage } from "./storage";
-import { Ollama } from "ollama";
+import { getSupabase, getSupabaseEnvStatus } from "./supabase.js";
+import { getStorage } from "./storage.js";
 
 const ollamaHost = process.env.OLLAMA_HOST ?? "http://localhost:11434";
-const ollama = new Ollama({ host: ollamaHost });
+let ollamaClientPromise: Promise<{
+  chat: (options: {
+    model: string;
+    messages: Array<{ role: string; content: string }>;
+    format: string;
+  }) => Promise<{ message: { content: string } }>;
+}> | null = null;
+
+async function getOllamaClient() {
+  if (!ollamaClientPromise) {
+    ollamaClientPromise = import("ollama").then(
+      ({ Ollama }) => new Ollama({ host: ollamaHost }),
+    );
+  }
+
+  return ollamaClientPromise;
+}
 
 function getErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
+  const message = error instanceof Error ? error.message : fallback;
+
+  if (/row-level security|permission denied/i.test(message)) {
+    return `${message} Add SUPABASE_SERVICE_ROLE_KEY in Vercel or update the RLS policy for anon access.`;
+  }
+
+  return message;
 }
 
 function sendMissingSupabaseEnv(res: Express["response"], action: string) {
-  const hasUrl = !!process.env.SUPABASE_URL;
-  const hasKey = !!process.env.SUPABASE_ANON_KEY;
-  console.error("[Vercel] Supabase env check:", { hasUrl, hasKey });
+  const status = getSupabaseEnvStatus();
+  console.error("[Vercel] Supabase env check:", status);
 
   return res.status(503).json({
     message: `Failed to ${action}`,
     error:
-      "SUPABASE_URL and SUPABASE_ANON_KEY must be set in Vercel Environment Variables (exact names, no spaces). Redeploy after saving.",
-    debug: { hasUrl, hasKey },
+      "SUPABASE_URL and either SUPABASE_SERVICE_ROLE_KEY (recommended) or SUPABASE_ANON_KEY must be set in Vercel Environment Variables. Redeploy after saving.",
+    debug: status,
   });
 }
 
@@ -165,6 +185,7 @@ The JSON must have this exact structure:
 Generate 5 to 10 nodes capturing the essence of the prompt.
 `;
 
+      const ollama = await getOllamaClient();
       const response = await ollama.chat({
         model: 'llama3.1:latest',
         messages: [

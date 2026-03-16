@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { type User, type InsertUser } from "@shared/schema";
 import { randomUUID } from "crypto";
-import { getSupabase } from "./supabase";
+import { getSupabase } from "./supabase.js";
 
 export interface MindMapData {
   id: string;

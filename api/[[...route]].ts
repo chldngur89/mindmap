@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "http";
 import serverless from "serverless-http";
-import { createApp } from "../server/app";
+import { createApp } from "../server/app.js";
 
 let handler: ((req: IncomingMessage, res: ServerResponse) => Promise<void>) | null = null;
 
