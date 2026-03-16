@@ -32,9 +32,13 @@ Vercel 프로젝트에 **환경 변수**를 넣어줘야 배포된 앱이 당신
 | `SUPABASE_URL`     | 2번에서 복사한 **Project URL**      | Production 등 전부 체크 |
 | `SUPABASE_ANON_KEY`| 2번에서 복사한 **anon public** 키   | Production 등 전부 체크 |
 
-- **Key**: 위 표의 Name 그대로 입력 (`SUPABASE_URL`, `SUPABASE_ANON_KEY`).
-- **Value**: Supabase에서 복사한 값 붙여넣기.
-- **Environment**: Production, Preview, Development 전부 체크해 두면 편합니다.
+- **Key**: 반드시 아래와 **완전히 동일**하게 입력 (대소문자, 밑줄만 사용).
+  - `SUPABASE_URL`
+  - `SUPABASE_ANON_KEY`
+- **Value**: Supabase에서 복사한 값 그대로 붙여넣기. **앞뒤 공백이나 줄바꿈 없이**.
+- **Environment**: Production, Preview, Development 전부 체크.
+
+**참고**: Vercel에서는 코드 기본값을 쓰지 않고 **환경 변수만** 사용합니다. 두 개 다 넣어야 연동됩니다.
 
 5. 각각 **Save** 클릭.
 
@@ -61,7 +65,7 @@ Vercel 프로젝트에 **환경 변수**를 넣어줘야 배포된 앱이 당신
 
 ## 6. 참고
 
-- **코드 기본값**: 이 프로젝트 코드에는 Supabase URL·anon key가 기본값으로 들어가 있어서, **로컬**에서는 환경 변수 없이도 그 프로젝트로 연결됩니다. **Vercel**에서는 보안상 환경 변수로 넣어 주는 방식을 쓰는 것이 좋습니다.
+- **코드 기본값**: **로컬**에서는 환경 변수 없이도 Supabase 기본값으로 연결됩니다. **Vercel**에서는 기본값을 쓰지 않고 **반드시 환경 변수** `SUPABASE_URL`, `SUPABASE_ANON_KEY` 두 개를 넣어야 합니다.
 - **다른 Supabase 프로젝트**를 쓰려면, 그 프로젝트의 **Project URL**과 **anon public**을 Vercel 환경 변수에 넣으면 됩니다.
 - **AI 생성(Organize Map)**: Vercel 서버에서는 Ollama를 쓸 수 없어 해당 기능은 동작하지 않고, **저장/불러오기/삭제만** Supabase와 연동됩니다.
 
@@ -77,6 +81,7 @@ Vercel 프로젝트에 **환경 변수**를 넣어줘야 배포된 앱이 당신
 
 에러 박스에 **서버에서 내려준 메시지**가 함께 표시됩니다. 예:
 
+- `SUPABASE_URL and SUPABASE_ANON_KEY must be set in Vercel...` → 환경 변수가 **없거나 이름이 다름**. 7-3으로 가서 이름을 `SUPABASE_URL`, `SUPABASE_ANON_KEY`로 정확히 맞추고 **Redeploy**.
 - `new row violates row-level security policy` → **Supabase RLS** 때문에 차단된 것. 7-2로 이동.
 - `JWT expired` 또는 `Invalid API key` → **SUPABASE_ANON_KEY**가 잘못됨. 7-3으로.
 - `Failed to fetch` / `fetch failed` → 네트워크/URL 문제. **SUPABASE_URL** 확인.

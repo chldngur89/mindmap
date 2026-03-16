@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { supabase } from "./supabase";
 import { storage } from "./storage";
 import { Ollama } from "ollama";
 
@@ -14,6 +15,13 @@ export async function registerRoutes(
   // --- Mind map CRUD ---
   app.get("/api/maps", async (_req, res) => {
     try {
+      // Vercel에서 Supabase env 미설정 시 안내
+      if (process.env.VERCEL && !supabase) {
+        return res.status(503).json({
+          message: "Failed to list mind maps",
+          error: "SUPABASE_URL and SUPABASE_ANON_KEY must be set in Vercel Environment Variables (exact names, no spaces). Redeploy after saving.",
+        });
+      }
       const list = await storage.listMindMaps();
       res.json(list);
     } catch (error) {
