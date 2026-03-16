@@ -17,8 +17,12 @@ export async function registerRoutes(
       const list = await storage.listMindMaps();
       res.json(list);
     } catch (error) {
-      console.error("List maps error:", error);
-      res.status(500).json({ message: "Failed to list mind maps" });
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("List maps error:", message, error);
+      res.status(500).json({
+        message: "Failed to list mind maps",
+        error: message,
+      });
     }
   });
 

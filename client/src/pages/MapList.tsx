@@ -5,7 +5,7 @@ import { useListMaps } from "@/hooks/use-maps";
 import { formatDistanceToNow } from "date-fns";
 
 export default function MapList() {
-  const { data: maps, isLoading, isError } = useListMaps();
+  const { data: maps, isLoading, isError, error } = useListMaps();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -40,8 +40,10 @@ export default function MapList() {
         )}
 
         {isError && (
-          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
-            목록을 불러오지 못했습니다. Supabase 연결을 확인해 주세요.
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive space-y-1">
+            <p className="font-medium">목록을 불러오지 못했습니다.</p>
+            <p className="text-xs opacity-90">{error?.message}</p>
+            <p className="text-xs mt-2">Vercel 환경 변수(SUPABASE_URL, SUPABASE_ANON_KEY)와 Supabase RLS 정책을 확인하세요.</p>
           </div>
         )}
 

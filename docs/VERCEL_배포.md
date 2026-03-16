@@ -66,3 +66,46 @@ Vercel 프로젝트에 **환경 변수**를 넣어줘야 배포된 앱이 당신
 - **AI 생성(Organize Map)**: Vercel 서버에서는 Ollama를 쓸 수 없어 해당 기능은 동작하지 않고, **저장/불러오기/삭제만** Supabase와 연동됩니다.
 
 정리하면, **Vercel에 배포한 뒤 Supabase 연동은 “Vercel 환경 변수에 URL이랑 anon key 넣고, 한 번 재배포”** 하면 됩니다.
+
+---
+
+## 7. "목록을 불러오지 못했습니다" / 500 에러가 날 때
+
+배포 후 목록이 안 뜨고 500이 나오면 아래 순서대로 확인하세요.
+
+### 1) 화면에 나오는 에러 메시지 확인
+
+에러 박스에 **서버에서 내려준 메시지**가 함께 표시됩니다. 예:
+
+- `new row violates row-level security policy` → **Supabase RLS** 때문에 차단된 것. 7-2로 이동.
+- `JWT expired` 또는 `Invalid API key` → **SUPABASE_ANON_KEY**가 잘못됨. 7-3으로.
+- `Failed to fetch` / `fetch failed` → 네트워크/URL 문제. **SUPABASE_URL** 확인.
+
+### 2) Supabase RLS 확인
+
+1. Supabase 대시보드 → **Table Editor** → **mind_maps**
+2. **Policies**에서 anon이 **SELECT** 할 수 있는 정책이 있는지 확인.
+3. 없거나 막혀 있으면 **SQL Editor**에서 아래 실행:
+
+```sql
+CREATE POLICY "Allow anon all on mind_maps"
+ON mind_maps FOR ALL TO anon
+USING (true) WITH CHECK (true);
+```
+
+(이미 있다면 수정할 필요 없음.)
+
+### 3) Vercel 환경 변수 확인
+
+1. Vercel 프로젝트 → **Settings** → **Environment Variables**
+2. **SUPABASE_URL**: `https://프로젝트ref.supabase.co` 형태, 공백/줄바꿈 없이.
+3. **SUPABASE_ANON_KEY**: Supabase **Project Settings → API** 의 **anon public** 키 전체를 그대로 복사.
+4. 수정했다면 **Redeploy** 한 번 더 실행.
+
+### 4) Vercel 함수 로그 확인
+
+1. Vercel 프로젝트 → **Deployments** → 최신 배포 클릭
+2. **Functions** 탭에서 `/api/maps` 요청 선택
+3. **Logs**에 찍힌 `List maps error:` 메시지로 원인 확인.
+
+위를 다 해도 해결되지 않으면, 화면에 보이는 **에러 메시지 전체**와 **Vercel Functions 로그** 내용을 알려주면 다음 원인을 짚을 수 있습니다.

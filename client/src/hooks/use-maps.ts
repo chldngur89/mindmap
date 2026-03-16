@@ -20,7 +20,11 @@ export function useListMaps() {
     queryKey: ["maps"],
     queryFn: async (): Promise<MindMapListItem[]> => {
       const res = await fetch("/api/maps");
-      if (!res.ok) throw new Error("Failed to list mind maps");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const msg = body?.error || body?.message || "Failed to list mind maps";
+        throw new Error(msg);
+      }
       return res.json();
     },
   });
