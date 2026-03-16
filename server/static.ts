@@ -3,7 +3,10 @@ import fs from "fs";
 import path from "path";
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "public");
+  // Vercel: 서버리스 루트는 프로젝트 루트이므로 dist/public 사용
+  const distPath = process.env.VERCEL
+    ? path.join(process.cwd(), "dist", "public")
+    : path.resolve(__dirname, "public");
   if (!fs.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`,
