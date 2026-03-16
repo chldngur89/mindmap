@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { supabase } from "./supabase";
-import { storage } from "./storage";
+import { getSupabase } from "./supabase";
+import { getStorage } from "./storage";
 import { Ollama } from "ollama";
 
 const ollama = new Ollama({ host: 'http://localhost:11434' });
@@ -15,14 +15,19 @@ export async function registerRoutes(
   // --- Mind map CRUD ---
   app.get("/api/maps", async (_req, res) => {
     try {
-      // Vercel에서 Supabase env 미설정 시 안내
-      if (process.env.VERCEL && !supabase) {
+      // Vercel에서 Supabase env 미설정 시 안내 (요청 시점에 env 확인)
+      const supabaseClient = getSupabase();
+      if (process.env.VERCEL && !supabaseClient) {
+        const hasUrl = !!process.env.SUPABASE_URL;
+        const hasKey = !!process.env.SUPABASE_ANON_KEY;
+        console.error("[Vercel] Supabase env check:", { hasUrl, hasKey });
         return res.status(503).json({
           message: "Failed to list mind maps",
           error: "SUPABASE_URL and SUPABASE_ANON_KEY must be set in Vercel Environment Variables (exact names, no spaces). Redeploy after saving.",
+          debug: process.env.VERCEL ? { hasUrl, hasKey } : undefined,
         });
       }
-      const list = await storage.listMindMaps();
+      const list = await getStorage().listMindMaps();
       res.json(list);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -36,7 +41,7 @@ export async function registerRoutes(
 
   app.get("/api/maps/:id", async (req, res) => {
     try {
-      const map = await storage.getMindMap(req.params.id);
+      const map = await getStorage().getMindMap(req.params.id);
       if (!map) {
         return res.status(404).json({ message: "Mind map not found" });
       }
@@ -50,7 +55,7 @@ export async function registerRoutes(
   app.post("/api/maps", async (req, res) => {
     try {
       const { title, nodes = [], edges = [] } = req.body ?? {};
-      const map = await storage.createMindMap({ title, nodes, edges });
+      const map = await getStorage().createMindMap({ title, nodes, edges });
       if (!map?.id) {
         console.error("Create map: storage returned map without id", map);
         return res.status(500).json({ message: "Failed to create mind map (no id returned)" });
@@ -68,7 +73,7 @@ export async function registerRoutes(
       if (!nodes || !edges) {
         return res.status(400).json({ message: "nodes and edges are required" });
       }
-      const map = await storage.updateMindMap(req.params.id, { title, nodes, edges });
+      const map = await getStorage().updateMindMap(req.params.id, { title, nodes, edges });
       if (!map) {
         return res.status(404).json({ message: "Mind map not found" });
       }
@@ -81,7 +86,7 @@ export async function registerRoutes(
 
   app.delete("/api/maps/:id", async (req, res) => {
     try {
-      await storage.deleteMindMap(req.params.id);
+      await getStorage().deleteMindMap(req.params.id);
       res.status(204).send();
     } catch (error) {
       console.error("Delete map error:", error);

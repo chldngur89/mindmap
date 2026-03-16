@@ -1,6 +1,7 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { type User, type InsertUser } from "@shared/schema";
 import { randomUUID } from "crypto";
-import { supabase } from "./supabase";
+import { getSupabase } from "./supabase";
 
 export interface MindMapData {
   id: string;
@@ -115,7 +116,7 @@ export class MemStorage implements IStorage {
 }
 
 export class SupabaseStorage implements IStorage {
-  constructor(private client: NonNullable<typeof supabase>) {}
+  constructor(private client: SupabaseClient) {}
 
   async getUser(_id: string): Promise<User | undefined> {
     return undefined;
@@ -195,4 +196,13 @@ export class SupabaseStorage implements IStorage {
   }
 }
 
-export const storage: IStorage = supabase ? new SupabaseStorage(supabase) : new MemStorage();
+let _storage: IStorage | null = null;
+
+/** 요청 시점에 storage 반환 (Vercel에서 env가 런타임에만 주입되도록) */
+export function getStorage(): IStorage {
+  if (!_storage) {
+    const client = getSupabase();
+    _storage = client ? new SupabaseStorage(client) : new MemStorage();
+  }
+  return _storage;
+}

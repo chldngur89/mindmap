@@ -40,6 +40,8 @@ Vercel 프로젝트에 **환경 변수**를 넣어줘야 배포된 앱이 당신
 
 **참고**: Vercel에서는 코드 기본값을 쓰지 않고 **환경 변수만** 사용합니다. 두 개 다 넣어야 연동됩니다.
 
+- **NEXT_PUBLIC_ 접두사 사용하지 마세요.** 이 프로젝트는 Next.js가 아니라 Express + Vite입니다. Supabase 키는 서버(API)에서만 쓰이므로 `SUPABASE_URL`, `SUPABASE_ANON_KEY` 그대로 두면 됩니다.
+
 5. 각각 **Save** 클릭.
 
 ---
@@ -81,24 +83,30 @@ Vercel 프로젝트에 **환경 변수**를 넣어줘야 배포된 앱이 당신
 
 에러 박스에 **서버에서 내려준 메시지**가 함께 표시됩니다. 예:
 
-- `SUPABASE_URL and SUPABASE_ANON_KEY must be set in Vercel...` → 환경 변수가 **없거나 이름이 다름**. 7-3으로 가서 이름을 `SUPABASE_URL`, `SUPABASE_ANON_KEY`로 정확히 맞추고 **Redeploy**.
+- `SUPABASE_URL and SUPABASE_ANON_KEY must be set in Vercel...` → 환경 변수 미주입. 응답에 `debug: { hasUrl, hasKey }`가 있으면 **hasUrl/hasKey가 true인데도** 이 메시지가 나오는 건 아닌지 확인. 둘 다 false면 변수 이름/적용 환경/Redeploy 확인(7-3). **NEXT_PUBLIC_ 붙이지 마세요**(이 프로젝트는 Next.js 아님).
 - `new row violates row-level security policy` → **Supabase RLS** 때문에 차단된 것. 7-2로 이동.
 - `JWT expired` 또는 `Invalid API key` → **SUPABASE_ANON_KEY**가 잘못됨. 7-3으로.
 - `Failed to fetch` / `fetch failed` → 네트워크/URL 문제. **SUPABASE_URL** 확인.
 
-### 2) Supabase RLS 확인
+### 2) Supabase RLS 해결 (한 번에 적용)
 
-1. Supabase 대시보드 → **Table Editor** → **mind_maps**
-2. **Policies**에서 anon이 **SELECT** 할 수 있는 정책이 있는지 확인.
-3. 없거나 막혀 있으면 **SQL Editor**에서 아래 실행:
+RLS 에러가 나면 **Supabase 대시보드 → SQL Editor**에서 아래 전체를 복사해 **Run** 하세요.
 
 ```sql
+-- 1) RLS 활성화
+ALTER TABLE mind_maps ENABLE ROW LEVEL SECURITY;
+
+-- 2) 기존 정책이 있으면 제거 (이름이 다르면 Table Editor → mind_maps → Policies에서 직접 확인)
+DROP POLICY IF EXISTS "Allow anon all on mind_maps" ON mind_maps;
+
+-- 3) anon이 목록/조회/저장/수정/삭제 모두 허용
 CREATE POLICY "Allow anon all on mind_maps"
 ON mind_maps FOR ALL TO anon
-USING (true) WITH CHECK (true);
+USING (true)
+WITH CHECK (true);
 ```
 
-(이미 있다면 수정할 필요 없음.)
+실행 후 **저장된 배포 URL**에서 새로고침하면 목록이 나와야 합니다.
 
 ### 3) Vercel 환경 변수 확인
 

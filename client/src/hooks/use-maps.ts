@@ -23,7 +23,8 @@ export function useListMaps() {
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         const msg = body?.error || body?.message || "Failed to list mind maps";
-        throw new Error(msg);
+        const debug = body?.debug ? ` (env: ${JSON.stringify(body.debug)})` : "";
+        throw new Error(msg + debug);
       }
       return res.json();
     },
