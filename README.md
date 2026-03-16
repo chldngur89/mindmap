@@ -11,6 +11,8 @@ npm run dev
 
 브라우저에서 http://localhost:5000
 
+- **5000 포트 사용 중** (macOS AirPlay 등): `npm run dev:5001` 또는 `npm run dev:5050` 후 해당 주소(예: http://localhost:5050)로 접속. 다른 포트: `PORT=원하는포트 npm run dev`
+
 ## 문서
 
 - **Supabase 연동**: `docs/SUPABASE_SETUP.md`

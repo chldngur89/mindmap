@@ -6,6 +6,9 @@
   "scripts": {
     "dev:client": "vite dev --port 5000",
     "dev": "NODE_ENV=development tsx server/index.ts",
+    "dev:5001": "PORT=5001 NODE_ENV=development tsx server/index.ts",
+    "dev:5002": "PORT=5002 NODE_ENV=development tsx server/index.ts",
+    "dev:5050": "PORT=5050 NODE_ENV=development tsx server/index.ts",
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
