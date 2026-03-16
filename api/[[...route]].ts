@@ -7,7 +7,7 @@ let handler: ((req: IncomingMessage, res: ServerResponse) => Promise<void>) | nu
 export default async function vercelHandler(req: IncomingMessage, res: ServerResponse) {
   if (!handler) {
     const { app } = await createApp();
-    handler = serverless(app) as (req: IncomingMessage, res: ServerResponse) => Promise<void>;
+    handler = serverless(app) as unknown as (req: IncomingMessage, res: ServerResponse) => Promise<void>;
   }
   return handler(req, res);
 }
