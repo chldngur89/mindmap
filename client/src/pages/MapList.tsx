@@ -1,11 +1,28 @@
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
-import { BrainCircuit, FilePlus, Loader2 } from "lucide-react";
+import { BrainCircuit, FilePlus, HardDriveDownload, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useListMaps } from "@/hooks/use-maps";
 import { formatDistanceToNow } from "date-fns";
+import {
+  clearLocalMindMapDraft,
+  listLocalMindMapDrafts,
+  type LocalMindMapDraft,
+} from "@/lib/local-draft";
 
 export default function MapList() {
   const { data: maps, isLoading, isError, error } = useListMaps();
+  const [localDrafts, setLocalDrafts] = useState<LocalMindMapDraft[]>([]);
+  const unsavedDrafts = localDrafts.filter((draft) => !draft.mapId);
+
+  useEffect(() => {
+    setLocalDrafts(listLocalMindMapDrafts());
+  }, []);
+
+  const handleDeleteLocalDraft = () => {
+    clearLocalMindMapDraft(null);
+    setLocalDrafts(listLocalMindMapDrafts());
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -31,6 +48,50 @@ export default function MapList() {
             </Link>
           </Button>
         </div>
+
+        {unsavedDrafts.length > 0 && (
+          <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50/70 p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <HardDriveDownload className="h-4 w-4 text-emerald-700" />
+                <h3 className="text-sm font-medium text-emerald-900">
+                  이어쓰기
+                </h3>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-emerald-900 hover:bg-emerald-100"
+                onClick={handleDeleteLocalDraft}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                삭제
+              </Button>
+            </div>
+            <ul className="space-y-2">
+              {unsavedDrafts.slice(0, 1).map((draft) => {
+                const href = draft.mapId ? `/map/${draft.mapId}` : "/new";
+
+                return (
+                  <li key={`${draft.mapId ?? "new"}-${draft.savedAt}`}>
+                    <Link href={href}>
+                      <a className="block rounded-lg border border-emerald-200 bg-white px-4 py-3 transition-colors hover:bg-emerald-50">
+                        <p className="font-medium text-foreground">
+                          {draft.title || "제목 없는 로컬 저장본"}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(draft.savedAt), {
+                            addSuffix: true,
+                          })} · 노드 {draft.nodes.length}개
+                        </p>
+                      </a>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
 
         {isLoading && (
           <div className="flex items-center justify-center py-12 text-muted-foreground">

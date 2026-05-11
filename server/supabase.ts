@@ -11,15 +11,9 @@ export interface SupabaseEnvStatus {
 }
 
 function readSupabaseConfig() {
-  const isVercel = !!process.env.VERCEL;
-  const url = isVercel
-    ? process.env.SUPABASE_URL
-    : (process.env.SUPABASE_URL ?? "https://sqbfxjptzswyqahyfznd.supabase.co");
+  const url = process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const anonKey = isVercel
-    ? process.env.SUPABASE_ANON_KEY
-    : (process.env.SUPABASE_ANON_KEY ??
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxYmZ4anB0enN3eXFhaHlmem5kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDYyMTksImV4cCI6MjA4OTE4MjIxOX0.KSdytoa1TXkhM69FqlI5XP17yDUYbbgG6c0jYV6nArU");
+  const anonKey = process.env.SUPABASE_ANON_KEY;
   const key = serviceRoleKey ?? anonKey;
 
   return {

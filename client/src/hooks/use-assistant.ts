@@ -1,25 +1,26 @@
 import { useMutation } from "@tanstack/react-query";
-import { type Node, type Edge } from "@xyflow/react";
+import type { Edge, Node } from "@xyflow/react";
 import { fetchWithTimeout, getApiErrorMessage } from "@/lib/api";
 
-export interface GenerateMapInput {
-  prompt: string;
+export interface AssistantInsightInput {
+  title: string;
   workspacePath?: string;
-  parentLevel?: number;
-  currentMapTitle?: string;
-}
-
-interface GenerateMapResponse {
   nodes: Node[];
   edges: Edge[];
+}
+
+export interface AssistantInsightResponse {
+  summary: string;
+  questionSuggestions: string[];
+  researchTopics: string[];
   modelUsed?: string;
 }
 
-export function useGenerateMap() {
-  return useMutation<GenerateMapResponse, Error, GenerateMapInput>({
-    mutationFn: async (payload: GenerateMapInput) => {
+export function useAssistantInsights() {
+  return useMutation<AssistantInsightResponse, Error, AssistantInsightInput>({
+    mutationFn: async (payload) => {
       const response = await fetchWithTimeout(
-        "/api/generate-map",
+        "/api/assistant/insights",
         {
           method: "POST",
           headers: {
@@ -32,7 +33,7 @@ export function useGenerateMap() {
 
       if (!response.ok) {
         throw new Error(
-          await getApiErrorMessage(response, "Failed to generate mind map"),
+          await getApiErrorMessage(response, "Failed to generate assistant insights"),
         );
       }
 

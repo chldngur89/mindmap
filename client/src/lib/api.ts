@@ -3,9 +3,10 @@ const API_TIMEOUT_MS = 12000;
 export async function fetchWithTimeout(
   input: RequestInfo | URL,
   init?: RequestInit,
+  timeoutMs = API_TIMEOUT_MS,
 ): Promise<Response> {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     return await fetch(input, {
@@ -15,7 +16,7 @@ export async function fetchWithTimeout(
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw new Error(
-        `Request timed out after ${API_TIMEOUT_MS / 1000}s. Check Vercel Functions logs and your Supabase URL/key.`,
+        `Request timed out after ${timeoutMs / 1000}s. Check Vercel Functions logs and your Supabase URL/key.`,
       );
     }
     throw error;
